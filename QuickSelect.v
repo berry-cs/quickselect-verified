@@ -113,7 +113,10 @@ Theorem quickselect_theorem : forall (n v: nat) (l : list nat),
 Proof.
   intros n v l H.
   split.
-  -
+  - induction l as [ | h t IHl].
+   + discriminate H.
+   + simpl. destruct (gtb h v) eqn:Heqn.
+    * Search (_ <= _). apply le_Sn_le.
 
 
 
