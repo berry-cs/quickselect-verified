@@ -87,6 +87,36 @@ Proof. reflexivity. Qed.
 Example quick_select_7: quick_select 0 [1;2;4;5] = None.
 Proof. reflexivity. Qed.
 
+Definition gtb (n m : nat) : bool :=
+  (Nat.ltb m n).
+
+
+Fixpoint count (f: nat -> nat -> bool) (v : nat) (l : list nat) : nat :=
+  match l with
+  | nil => 0
+  | h :: t => if (f h v)
+              then S (count f v t)
+              else (count f v t)
+  end.
+
+Example count_1: (count Nat.ltb 3 [1;2;2;3;3;3]) = 3.
+Proof. reflexivity. Qed.
+Example count_2: count Nat.eqb 3 [1;2;2;3;3;3] = 3.
+Proof. reflexivity. Qed.
+Example count_3: count gtb 3 [1;2;2;3;3;3] = 0.
+Proof. reflexivity. Qed.
+
+Theorem quickselect_theorem : forall (n v: nat) (l : list nat),
+  quick_select n l = Some v -> 
+  (count gtb v l) <= (n-1) /\ (count Nat.eqb v l) <= (length l) /\ 
+  (count Nat.ltb v l) <= ((length l)-n).
+Proof.
+  intros n v l H.
+  split.
+  -
+
+
+
 
 
 
