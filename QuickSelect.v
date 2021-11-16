@@ -4,88 +4,8 @@ Require Export Coq.Strings.String.
 From Coq Require Import Logic.FunctionalExtensionality.
 From Coq Require Import Lists.List.
 Import ListNotations.
-
-
-Fixpoint partition (n : nat) (l : list nat) : (list nat * list nat) :=
-  match l with 
-  | nil => ([],[])
-  | h :: t => let P := (partition n t) in
-                if h <? n
-               then (h :: (fst P), snd P)
-               else (fst P, h :: (snd P))
-  end.
-
-Example test_partition_1: partition 3 [1;2;4;5] = ([1;2],[4;5]).
-Proof. reflexivity. Qed.
-
-Example test_partition_2: partition 10 [1;2;4;5] = ([1;2;4;5],[]).
-Proof. reflexivity. Qed.
-
-Example test_partition_3: partition 1 [7;2;4;5] = ([],[7;2;4;5]).
-Proof. reflexivity. Qed.
-
 Require Import Coq.Program.Wf.
 Require Import Lia.
-
-Lemma partition_length_fst : forall (n : nat) (l : list nat),
-  (length (fst (partition n l))) <= (length l).
-Proof.
-  intros n l.
-  induction l as [ | h t IHl].
-  -simpl. reflexivity.
-  -simpl. destruct (h <? n) eqn:Heqn; simpl; lia. 
-Qed.
-
-Lemma partition_length_snd : forall (n : nat) (l : list nat),
-  (length (snd (partition n l))) <= (length l).
-Proof.
-  intros n l.
-  induction l as [ | h t IHl].
-  -simpl. reflexivity.
-  -simpl. destruct (h <? n) eqn:Heqn; simpl; lia. 
-Qed.
-
-Program Fixpoint quick_select (n : nat) (l : list nat) {measure (length l)} : option nat :=
-  match l with
-  | nil => None 
-  | h :: t => match (partition h t) with
-              | ( smaller, larger ) =>
-               if n =? 1+(length larger)
-               then Some h
-               else if n <=? (length larger)
-                    then (quick_select n  larger)
-                    else (quick_select ((n-(length larger))-1)  smaller)
-               end
-  end.
-Next Obligation.
-simpl.
-assert (length (snd (partition h t)) <= (length t)).
-- apply partition_length_snd.
-- rewrite <- Heq_anonymous in H. simpl in H. lia.
-Qed.
-
-Next Obligation.
-simpl.
-assert (length (fst (partition h t)) <= (length t)).
-- apply partition_length_fst.
-- rewrite <- Heq_anonymous in H. simpl in H. lia.
-Qed.
-
-
-Example quick_select_1: quick_select 1 [1;2;4;5] = Some 5.
-Proof. reflexivity. Qed.
-Example quick_select_2: quick_select 2 [1;2;4;5] = Some 4.
-Proof. reflexivity. Qed.
-Example quick_select_3: quick_select 2 [4;5;2;1] = Some 4.
-Proof. reflexivity. Qed.
-Example quick_select_4: quick_select 4 [50;60;4;9;21;35] = Some 21.
-Proof. reflexivity. Qed.
-Example quick_select_5: quick_select 2 [] = None.
-Proof. reflexivity. Qed.
-Example quick_select_6: quick_select 5 [1;2;4;5] = None.
-Proof. reflexivity. Qed.
-Example quick_select_7: quick_select 0 [1;2;4;5] = None.
-Proof. reflexivity. Qed.
 
 Definition gtb (n m : nat) : bool :=
   (Nat.ltb m n).
@@ -105,6 +25,157 @@ Example count_2: count Nat.eqb 3 [1;2;2;3;3;3] = 3.
 Proof. reflexivity. Qed.
 Example count_3: count gtb 3 [1;2;2;3;3;3] = 0.
 Proof. reflexivity. Qed.
+
+
+Fixpoint partition (n : nat) (l : list nat) : (list nat * list nat) :=
+  match l with 
+  | nil => ([],[])
+  | h :: t => let P := (partition n t) in
+                if h <? n
+               then (h :: (fst P), snd P)
+               else (fst P, h :: (snd P))
+  end.
+
+Lemma part_smaller : forall n l, 
+  count Nat.ltb n l = length (fst (partition n l)).
+Proof.
+  intros n l.
+  induction l as [ | h t IHt].
+  -reflexivity.
+  -simpl. destruct (h <? n) eqn:Heqn.
+   + simpl. apply f_equal. apply IHt.
+   + simpl. apply IHt.
+Qed.
+
+Lemma part_larger : forall n l, 
+  (count gtb n l) + (count Nat.eqb n l) = length (snd (partition n l)).
+Proof.
+  intros n l.
+  induction l as [ | h t IHt].
+  -reflexivity.
+  -simpl. destruct (gtb h n) eqn:Heqn_gtb.
+   + simpl. 
+Qed.
+
+Example test_partition_1: partition 3 [1;2;4;5] = ([1;2],[4;5]).
+Proof. reflexivity. Qed.
+
+Example test_partition_2: partition 10 [1;2;4;5] = ([1;2;4;5],[]).
+Proof. reflexivity. Qed.
+
+Example test_partition_3: partition 1 [7;2;4;5] = ([],[7;2;4;5]).
+Proof. reflexivity. Qed.
+
+
+
+Lemma partition_length_fst : forall (n : nat) (l : list nat),
+  (length (fst (partition n l))) <= (length l).
+Proof.
+  intros n l.
+  induction l as [ | h t IHl].
+  -simpl. reflexivity.
+  -simpl. destruct (h <? n) eqn:Heqn; simpl; lia. 
+Qed.
+
+Lemma partition_length_snd : forall (n : nat) (l : list nat),
+  (length (snd (partition n l))) <= (length l).
+Proof.
+  intros n l.
+  induction l as [ | h t IHl].
+  -simpl. reflexivity.
+  -simpl. destruct (h <? n) eqn:Heqn; simpl; lia. 
+Qed.
+
+
+Fixpoint q_s (steps:nat) (n : nat) (l : list nat) : option nat :=
+  match steps with
+   | 0 => None
+   | S steps' =>
+      match l with
+      | nil => None 
+      | h :: t => match (partition h t) with
+                  | ( smaller, larger ) =>
+                   if n =? 1+(length larger)
+                   then Some h
+                   else if n <=? (length larger)
+                        then (q_s steps' n  larger)
+                        else (q_s steps' ((n-(length larger))-1)  smaller)
+                   end
+      end
+  end.
+
+Definition quick_select (n : nat) (l : list nat) : option nat :=
+  q_s (length l) n l.
+
+Compute (quick_select 1 [1;2;4;5]).
+
+(*
+Program Fixpoint quick_select (n : nat) (l : list nat) {measure (length l)} : option nat :=
+  match l with
+  | nil => None 
+  | h :: t => match (partition h t) with
+              | ( smaller, larger ) =>
+               if n =? 1+(length larger)
+               then Some h
+               else if n <=? (length larger)
+                    then (quick_select n  larger)
+                    else (quick_select ((n-(length larger))-1)  smaller)
+               end
+  end.
+Next Obligation.
+simpl.
+assert (length (snd (partition h t)) <= (length t)).
+- apply partition_length_snd.
+- rewrite <- Heq_anonymous in H. simpl in H. lia.
+Defined.
+
+Next Obligation.
+simpl.
+assert (length (fst (partition h t)) <= (length t)).
+- apply partition_length_fst.
+- rewrite <- Heq_anonymous in H. simpl in H. lia.
+Defined.
+*)
+
+Example quick_select_1: quick_select 1 [1;2;4;5] = Some 5.
+Proof. reflexivity. Qed.
+Example quick_select_2: quick_select 2 [1;2;4;5] = Some 4.
+Proof. reflexivity. Qed.
+Example quick_select_3: quick_select 2 [4;5;2;1] = Some 4.
+Proof. reflexivity. Qed.
+Example quick_select_4: quick_select 4 [50;60;4;9;21;35] = Some 21.
+Proof. reflexivity. Qed.
+Example quick_select_5: quick_select 2 [] = None.
+Proof. reflexivity. Qed.
+Example quick_select_6: quick_select 5 [1;2;4;5] = None.
+Proof. reflexivity. Qed.
+Example quick_select_7: quick_select 0 [1;2;4;5] = None.
+Proof. reflexivity. Qed.
+
+
+
+Lemma quickselect_theorem_gtb : forall (n v: nat) (l : list nat),
+  quick_select n l = Some v -> 
+  (count gtb v l) <= (n-1).
+Proof.
+  intros n v l H.
+  generalize dependent n.
+  induction l as [ | h t IHt].
+   -intros n H. discriminate H.
+   -intros n H. simpl. destruct (gtb h v) eqn:Heqn.
+    + assert (S (count gtb v t) <= S (n - 2)).
+unfold quick_select in H; simpl in H.
+
+unfold quick_select, quick_select_func in H. simpl in H.
+      Focus 2.
+      replace (n - 1) with (S (n - 2)).
+      auto.
+      replace (n - 1) with (S (n - 2)).
+      auto.
+      assert (n > 1).
+      Focus 2.
+      lia.
+Qed.
 
 Theorem quickselect_theorem : forall (n v: nat) (l : list nat),
   quick_select n l = Some v -> 
