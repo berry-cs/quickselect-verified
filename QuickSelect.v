@@ -1,14 +1,12 @@
 From Coq Require Import Arith.Arith.
-From Coq Require Import Bool.Bool.
-Require Export Coq.Strings.String.
-From Coq Require Import Logic.FunctionalExtensionality.
+From Coq Require Import Nat.
 From Coq Require Import Lists.List.
 Import ListNotations.
 Require Import Coq.Program.Wf.
 Require Import Lia.
 
 Definition gtb (n m : nat) : bool :=
-  (Nat.ltb m n).
+  ltb m n.
 
 
 Fixpoint count (f: nat -> nat -> bool) (v : nat) (l : list nat) : nat :=
@@ -27,43 +25,96 @@ Example count_3: count gtb 3 [1;2;2;3;3;3] = 0.
 Proof. reflexivity. Qed.
 
 
-Fixpoint partition (n : nat) (l : list nat) : (list nat * list nat) :=
+(*
+Fixpoint partition (n:nat) (l:list nat) (smaller:list nat) (equal:list nat) (larger:list nat)
+  : (list nat * list nat * list nat) :=
+  match l with
+  | nil => (smaller, equal, larger)
+  | h :: t => if (h <? n)
+              then partition n t (h::smaller) equal larger
+              else if (h =? n)
+                   then partition n t smaller (h::equal) larger
+                   else partition n t smaller equal larger
+  end.
+*)
+
+
+Fixpoint partition (n : nat) (l : list nat) : (list nat * list nat * list nat) :=
   match l with 
-  | nil => ([],[])
-  | h :: t => let P := (partition n t) in
-                if h <? n
-               then (h :: (fst P), snd P)
-               else (fst P, h :: (snd P))
+  | nil => ([],[],[])
+  | h :: t => match (partition n t) with
+              | (smaller, equal, larger)
+                => if h <? n
+                   then (h :: smaller, equal, larger)
+                   else if h =? n
+                        then (smaller, h :: equal, larger)
+                        else (smaller, equal, h :: larger)
+              end
   end.
 
 Lemma part_smaller : forall n l, 
-  count Nat.ltb n l = length (fst (partition n l)).
+  count Nat.ltb n l = length (fst (fst (partition n l))).
 Proof.
   intros n l.
   induction l as [ | h t IHt].
-  -reflexivity.
-  -simpl. destruct (h <? n) eqn:Heqn.
-   + simpl. apply f_equal. apply IHt.
-   + simpl. apply IHt.
+  - reflexivity.
+  - simpl; destruct (partition n t) as ((a, b), c); simpl in *.
+    destruct (h <? n) eqn:Heqn; simpl.
+   + apply f_equal. apply IHt.
+   + destruct (h =? n); auto.
+Qed.
+
+Lemma part_equal : forall n l, 
+  count Nat.eqb n l = length (snd (fst (partition n l))).
+Proof.
+  intros n l.
+  induction l as [ | h t IHt].
+  - reflexivity.
+  - simpl; destruct (partition n t) as ((a, b), c); simpl in *.
+    destruct (h =? n) eqn:Heqn; simpl.
+    + replace (h <? n) with false; simpl; auto.
+      symmetry; rewrite Nat.ltb_nlt.
+      intros Habs.
+      rewrite Nat.eqb_eq in Heqn.
+      lia. (* contradiction *)
+   + destruct (h <? n); auto.
 Qed.
 
 Lemma part_larger : forall n l, 
-  (count gtb n l) + (count Nat.eqb n l) = length (snd (partition n l)).
+  count gtb n l = length (snd (partition n l)).
 Proof.
   intros n l.
   induction l as [ | h t IHt].
-  -reflexivity.
-  -simpl. destruct (gtb h n) eqn:Heqn_gtb.
-   + simpl. 
+  - reflexivity.
+  - simpl; destruct (partition n t) as ((a, b), c); simpl in *.
+    destruct (gtb h n) eqn:Heqn_gtb; simpl.
+    + replace (h <? n) with false; simpl; auto.
+      2: {
+        symmetry; rewrite Nat.ltb_nlt.
+        intros Habs.
+        unfold gtb in Heqn_gtb.
+        rewrite Nat.ltb_lt in Heqn_gtb.
+        lia. }
+      replace (h =? n) with false; simpl; auto.
+      { symmetry; rewrite Nat.eqb_neq.
+        unfold gtb in Heqn_gtb.
+        rewrite Nat.ltb_lt in Heqn_gtb.
+        lia. }
+    + destruct (h <? n) eqn:Heq; simpl; auto.
+      replace (h =? n) with true; simpl; auto.
+      symmetry; apply Nat.eqb_eq.
+      unfold gtb in Heqn_gtb.
+      rewrite Nat.ltb_nlt in *.
+      lia.
 Qed.
 
-Example test_partition_1: partition 3 [1;2;4;5] = ([1;2],[4;5]).
+Example test_partition_1: partition 3 [1;2;4;5] = ([1;2],[],[4;5]).
 Proof. reflexivity. Qed.
 
-Example test_partition_2: partition 10 [1;2;4;5] = ([1;2;4;5],[]).
+Example test_partition_2: partition 10 [1;2;4;5] = ([1;2;4;5],[],[]).
 Proof. reflexivity. Qed.
 
-Example test_partition_3: partition 1 [7;2;4;5] = ([],[7;2;4;5]).
+Example test_partition_3: partition 1 [7;2;1;4;5] = ([],[1],[7;2;4;5]).
 Proof. reflexivity. Qed.
 
 
