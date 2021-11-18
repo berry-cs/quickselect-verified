@@ -102,111 +102,61 @@ Example test_partitionE_3: partitionEqual 1 [7;2;1;4;5] = ([1]).
 Proof. reflexivity. Qed.
 
 
-(*
-
-Fixpoint partition (n : nat) (l : list nat) : (list nat * list nat * list nat) :=
-  match l with 
-  | nil => ([],[],[])
-  | h :: t => match (partition n t) with
-              | (smaller, equal, larger)
-                => if h <? n
-                   then (h :: smaller, equal, larger)
-                   else if h =? n
-                        then (smaller, h :: equal, larger)
-                        else (smaller, equal, h :: larger)
-              end
-  end.
 
 
-
-
-
-Lemma part_smaller : forall n l, 
-  count Nat.ltb n l = length (fst (fst (partition n l))).
+Lemma part_smaller_count : forall n l, 
+  count Nat.ltb n l = length (partitionSmaller n l).
 Proof.
-  intros n l.
-  induction l as [ | h t IHt].
-  - reflexivity.
-  - simpl; destruct (partition n t) as ((a, b), c); simpl in *.
-    destruct (h <? n) eqn:Heqn; simpl.
-   + apply f_equal. apply IHt.
-   + destruct (h =? n); auto.
+  induction l as [ | h t].
+  - simpl; auto.
+  - simpl.
+    destruct (h <? n) eqn:Hlt; simpl; auto.
 Qed.
 
-Lemma part_equal : forall n l, 
-  count Nat.eqb n l = length (snd (fst (partition n l))).
+Lemma part_larger_count : forall n l, 
+  count gtb n l = length (partitionLarger n l).
 Proof.
-  intros n l.
-  induction l as [ | h t IHt].
-  - reflexivity.
-  - simpl; destruct (partition n t) as ((a, b), c); simpl in *.
-    destruct (h =? n) eqn:Heqn; simpl.
-    + replace (h <? n) with false; simpl; auto.
-      symmetry; rewrite Nat.ltb_nlt.
-      intros Habs.
-      rewrite Nat.eqb_eq in Heqn.
-      lia. (* contradiction *)
-   + destruct (h <? n); auto.
+  induction l as [ | h t].
+  - simpl; auto.
+  - simpl.
+    destruct (gtb h n) eqn:Hlt; simpl; auto.
 Qed.
 
-Lemma part_larger : forall n l, 
-  count gtb n l = length (snd (partition n l)).
+Lemma part_equal_count : forall n l, 
+  count Nat.eqb n l = length (partitionEqual n l).
 Proof.
-  intros n l.
-  induction l as [ | h t IHt].
-  - reflexivity.
-  - simpl; destruct (partition n t) as ((a, b), c); simpl in *.
-    destruct (gtb h n) eqn:Heqn_gtb; simpl.
-    + replace (h <? n) with false; simpl; auto.
-      2: {
-        symmetry; rewrite Nat.ltb_nlt.
-        intros Habs.
-        unfold gtb in Heqn_gtb.
-        rewrite Nat.ltb_lt in Heqn_gtb.
-        lia. }
-      replace (h =? n) with false; simpl; auto.
-      { symmetry; rewrite Nat.eqb_neq.
-        unfold gtb in Heqn_gtb.
-        rewrite Nat.ltb_lt in Heqn_gtb.
-        lia. }
-    + destruct (h <? n) eqn:Heq; simpl; auto.
-      replace (h =? n) with true; simpl; auto.
-      symmetry; apply Nat.eqb_eq.
-      unfold gtb in Heqn_gtb.
-      rewrite Nat.ltb_nlt in *.
-      lia.
+  induction l as [ | h t].
+  - simpl; auto.
+  - simpl.
+    destruct (h =? n) eqn:Hlt; simpl; auto.
 Qed.
 
-Example test_partition_1: partition 3 [1;2;4;5] = ([1;2],[],[4;5]).
-Proof. reflexivity. Qed.
-
-Example test_partition_2: partition 10 [1;2;4;5] = ([1;2;4;5],[],[]).
-Proof. reflexivity. Qed.
-
-Example test_partition_3: partition 1 [7;2;1;4;5] = ([],[1],[7;2;4;5]).
-Proof. reflexivity. Qed.
-
-*)
-
-(*
-Lemma partition_length_fst : forall (n : nat) (l : list nat),
-  (length (fst (partition n l))) <= (length l).
+Lemma part_larger_length : forall n l,
+    length (partitionLarger n l) <= length l.
 Proof.
-  intros n l.
-  induction l as [ | h t IHl].
-  -simpl. reflexivity.
-  -simpl. destruct (h <? n) eqn:Heqn; simpl; lia. 
+  induction l as [ | h t IHl]; simpl; auto.
+  destruct (gtb h n) eqn:Hlt; simpl; auto.
+  Search (S _ <= S _).
+  apply le_n_S.
+  auto.
 Qed.
 
-Lemma partition_length_snd : forall (n : nat) (l : list nat),
-  (length (snd (partition n l))) <= (length l).
+Lemma part_smaller_length : forall n l,
+    length (partitionSmaller n l) <= length l.
 Proof.
-  intros n l.
-  induction l as [ | h t IHl].
-  -simpl. reflexivity.
-  -simpl. destruct (h <? n) eqn:Heqn; simpl; lia. 
+  induction l as [ | h t IHl]; simpl; auto.
+  destruct (ltb h n) eqn:Hlt; simpl; auto.
+  apply le_n_S; auto.
 Qed.
-*)
+
+Lemma part_equal_length : forall n l,
+    length (partitionEqual n l) <= length l.
+Proof.
+  induction l as [ | h t IHl]; simpl; auto.
+  destruct (eqb h n) eqn:Hlt; simpl; auto.
+  apply le_n_S; auto.
+Qed.
+
 
 Fixpoint q_s (steps:nat) (n : nat) (l : list nat) : option nat :=
   match steps with
@@ -229,35 +179,6 @@ Definition quick_select (n : nat) (l : list nat) : option nat :=
   q_s (length l) n l.
 
 Compute (quick_select 1 [1;4;3;5]).
-
-(*
-Program Fixpoint quick_select (n : nat) (l : list nat) {measure (length l)} : option nat :=
-  match l with
-  | nil => None 
-  | h :: t => match (partition h t) with
-              | ( smaller, larger ) =>
-               if n =? 1+(length larger)
-               then Some h
-               else if n <=? (length larger)
-                    then (quick_select n  larger)
-                    else (quick_select ((n-(length larger))-1)  smaller)
-               end
-  end.
-Next Obligation.
-simpl.
-assert (length (snd (partition h t)) <= (length t)).
-- apply partition_length_snd.
-- rewrite <- Heq_anonymous in H. simpl in H. lia.
-Defined.
-
-Next Obligation.
-simpl.
-assert (length (fst (partition h t)) <= (length t)).
-- apply partition_length_fst.
-- rewrite <- Heq_anonymous in H. simpl in H. lia.
-Defined.
-*)
-
 Compute  quick_select 2 [4;5;2;1].
 
 Example quick_select_1: quick_select 1 [1;2;4;5] = Some 5.
@@ -277,28 +198,34 @@ Proof. reflexivity. Qed.
 
 
 
-Lemma quickselect_theorem_gtb : forall (n v: nat) (l : list nat),
-  quick_select n l = Some v -> 
-  (count gtb v l) <= (n-1).
+Lemma quickselect_theorem_gtb : forall (steps n v: nat) (l : list nat),
+    length l <= steps ->
+    quick_select n l = Some v -> 
+    (count gtb v l) < n.
 Proof.
-  intros n v l H.
-  generalize dependent n.
-  induction l as [ | h t IHt].
-   -intros n H. discriminate H.
-   -intros n H. simpl. destruct (gtb h v) eqn:Heqn.
-    + assert (S (count gtb v t) <= S (n - 2)).
-unfold quick_select in H; simpl in H.
+  induction steps as [ | steps' IHsteps]; unfold quick_select; intros n v l Hlen Hqs.
+  - assert (length l = 0).
+    { lia. }
+    rewrite H in Hqs; simpl in Hqs.
+    discriminate.
 
-unfold quick_select, quick_select_func in H. simpl in H.
-      Focus 2.
-      replace (n - 1) with (S (n - 2)).
-      auto.
-      replace (n - 1) with (S (n - 2)).
-      auto.
-      assert (n > 1).
-      Focus 2.
-      lia.
-Qed.
+  - rewrite part_larger_count.
+    destruct l as [ | h l'].
+    -- simpl in *; discriminate.
+    -- simpl in Hqs.
+       destruct (n <=? length (partitionLarger h l')) eqn:Heq1.
+       --- Search (_ <=? _ = true).
+           rewrite Nat.leb_le in Heq1.
+           simpl.
+           replace (gtb h v) with false.
+           ---- rewrite <- part_larger_count.
+                apply IHsteps.
+                simpl in Hlen; lia.
+                unfold quick_select.
+
+
+
+
 
 Theorem quickselect_theorem : forall (n v: nat) (l : list nat),
   quick_select n l = Some v -> 
