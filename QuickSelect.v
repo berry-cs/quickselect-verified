@@ -38,6 +38,71 @@ Fixpoint partition (n:nat) (l:list nat) (smaller:list nat) (equal:list nat) (lar
   end.
 *)
 
+Fixpoint partitionSmaller (n : nat) (l : list nat) : (list nat) :=
+ match l with 
+  | nil => []
+  | h :: t => match (partitionSmaller n t) with
+              |smaller 
+                => if h <? n
+                   then (h :: smaller)
+                   else partitionSmaller n t
+              end
+  end.
+
+Example test_partitionS_1: partitionSmaller 3 [1;2;4;5] = [1;2].
+Proof. reflexivity. Qed.
+
+Example test_partitionS_2: partitionSmaller 10 [1;2;4;5] = [1;2;4;5].
+Proof. reflexivity. Qed.
+
+Example test_partitionS_3: partitionSmaller 1 [7;2;1;4;5] = ([]).
+Proof. reflexivity. Qed.
+
+
+
+Fixpoint partitionLarger (n : nat) (l : list nat) : (list nat) :=
+ match l with 
+  | nil => []
+  | h :: t => match (partitionLarger n t) with
+              |Larger
+                => if gtb h  n
+                   then (h :: Larger)
+                   else partitionLarger n t
+              end
+  end.
+
+Example test_partitionL_1: partitionLarger 3 [1;2;4;5] = [4;5].
+Proof. reflexivity. Qed.
+
+Example test_partitionL_2: partitionLarger 10 [1;2;4;5] = [].
+Proof. reflexivity. Qed.
+
+Example test_partitionL_3: partitionLarger 1 [7;2;1;4;5] = ([7;2;4;5]).
+Proof. reflexivity. Qed.
+
+
+Fixpoint partitionEqual (n : nat) (l : list nat) : (list nat) :=
+ match l with 
+  | nil => []
+  | h :: t => match (partitionEqual n t) with
+              |EqualList
+                => if  h =? n
+                   then (h :: EqualList)
+                   else partitionEqual n t
+              end
+  end.
+
+Example test_partitionE_1: partitionEqual 3 [1;2;3;4;3;5] = [3;3].
+Proof. reflexivity. Qed.
+
+Example test_partitionE_2: partitionEqual 10 [1;2;4;5] = [].
+Proof. reflexivity. Qed.
+
+Example test_partitionE_3: partitionEqual 1 [7;2;1;4;5] = ([1]).
+Proof. reflexivity. Qed.
+
+
+(*
 
 Fixpoint partition (n : nat) (l : list nat) : (list nat * list nat * list nat) :=
   match l with 
@@ -51,6 +116,10 @@ Fixpoint partition (n : nat) (l : list nat) : (list nat * list nat * list nat) :
                         else (smaller, equal, h :: larger)
               end
   end.
+
+
+
+
 
 Lemma part_smaller : forall n l, 
   count Nat.ltb n l = length (fst (fst (partition n l))).
@@ -117,8 +186,9 @@ Proof. reflexivity. Qed.
 Example test_partition_3: partition 1 [7;2;1;4;5] = ([],[1],[7;2;4;5]).
 Proof. reflexivity. Qed.
 
+*)
 
-
+(*
 Lemma partition_length_fst : forall (n : nat) (l : list nat),
   (length (fst (partition n l))) <= (length l).
 Proof.
@@ -136,29 +206,29 @@ Proof.
   -simpl. reflexivity.
   -simpl. destruct (h <? n) eqn:Heqn; simpl; lia. 
 Qed.
-
+*)
 
 Fixpoint q_s (steps:nat) (n : nat) (l : list nat) : option nat :=
   match steps with
    | 0 => None
    | S steps' =>
       match l with
-      | nil => None 
-      | h :: t => match (partition h t) with
-                  | ( smaller, larger ) =>
-                   if n =? 1+(length larger)
-                   then Some h
-                   else if n <=? (length larger)
-                        then (q_s steps' n  larger)
-                        else (q_s steps' ((n-(length larger))-1)  smaller)
-                   end
+      | nil => None
+      | h :: t => let  larger := partitionLarger h t in
+                  let  smaller := partitionSmaller h t in
+                  let  equal := partitionEqual h t in
+      if n <=? length larger then
+         q_s steps' n larger else
+         if (length larger + length equal + 1) <? n then
+         q_s steps' (n - (length larger + length equal + 1)) smaller else
+         Some h
       end
   end.
 
 Definition quick_select (n : nat) (l : list nat) : option nat :=
   q_s (length l) n l.
 
-Compute (quick_select 1 [1;2;4;5]).
+Compute (quick_select 1 [1;4;3;5]).
 
 (*
 Program Fixpoint quick_select (n : nat) (l : list nat) {measure (length l)} : option nat :=
@@ -187,6 +257,8 @@ assert (length (fst (partition h t)) <= (length t)).
 - rewrite <- Heq_anonymous in H. simpl in H. lia.
 Defined.
 *)
+
+Compute  quick_select 2 [4;5;2;1].
 
 Example quick_select_1: quick_select 1 [1;2;4;5] = Some 5.
 Proof. reflexivity. Qed.
@@ -239,7 +311,6 @@ Proof.
    + discriminate H.
    + simpl. destruct (gtb h v) eqn:Heqn.
     * Search (_ <= _). apply le_Sn_le.
-
 
 
 
