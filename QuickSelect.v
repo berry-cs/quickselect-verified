@@ -198,48 +198,177 @@ Proof. reflexivity. Qed.
 
 
 
-Lemma quickselect_theorem_gtb : forall (steps n v: nat) (l : list nat),
+
+(* ********************************************************************* *)
+(* ********************************************************************* *)
+(* ********************************************************************* *)
+(* ********************************************************************* *)
+(* ********************************************************************* *)
+
+
+Lemma In_part_larger : forall lst h x, In x (partitionLarger h lst) -> h < x.
+Proof.
+Admitted.
+
+Lemma In_part_smaller : forall lst h x, In x (partitionSmaller h lst) -> x < h.
+Proof.
+Admitted.
+
+Lemma In_qs : forall steps n lst v, q_s steps n lst = Some v -> In v lst.             
+Proof.
+Admitted.
+
+Lemma In_part_larger_In_list : 
+             forall v h l, h < v -> In v (partitionLarger h l) -> In v l.
+Proof.
+Admitted.
+
+Lemma count_part_larger_lt :
+  forall lst h v, h < v
+                  -> In v lst
+                  -> length (partitionLarger h lst) > 0
+                  -> count gtb v lst < count gtb v (partitionLarger h lst).
+Proof.
+Admitted.
+
+Lemma counts_add_up :
+  forall h l, count gtb h l + count Nat.eqb h l + count Nat.ltb h l = length l.
+Proof.
+Admitted.
+
+
+Lemma count_part_smaller_lt :
+  forall v h l, v < h -> count Nat.ltb v (partitionSmaller h l) = count Nat.ltb v l.
+Proof.
+Admitted.
+
+
+Lemma count_part_smaller_eq :
+  forall v h l, v < h -> count Nat.eqb v (partitionSmaller h l) = count Nat.eqb v l.
+Proof.
+Admitted.
+
+
+
+Lemma part_smaller_chunk :
+  forall v h,
+    v < h -> forall l,
+      length (partitionLarger v (partitionSmaller h l)) +
+      length (partitionLarger h l) + length (partitionEqual h l) =
+      length (partitionLarger v l).
+Proof.
+  intros.
+  repeat rewrite <- part_larger_count.
+  rewrite <- part_equal_count.
+  assert (H1:=counts_add_up h l).
+  assert (H2:=counts_add_up v (partitionSmaller h l)).
+  assert (H3:=counts_add_up v l).
+  rewrite <- part_smaller_count in H2.
+  rewrite <- H3 in H1.
+  rewrite <- H2 in H1.
+
+  replace (count Nat.eqb v l) with (count Nat.eqb v (partitionSmaller h l)) in H1.
+  replace (count Nat.ltb v l) with (count Nat.ltb v (partitionSmaller h l)) in H1.
+  lia.
+
+  apply count_part_smaller_lt; auto.
+  apply count_part_smaller_eq; auto.
+Qed.
+
+
+
+
+
+Lemma qs_theorem_gtb : forall (steps n v: nat) (l : list nat),
     length l <= steps ->
-    quick_select n l = Some v -> 
+    q_s steps n l = Some v -> 
     (count gtb v l) < n.
 Proof.
-  induction steps as [ | steps' IHsteps]; unfold quick_select; intros n v l Hlen Hqs.
-  - assert (length l = 0).
-    { lia. }
-    rewrite H in Hqs; simpl in Hqs.
+  induction steps as [ | steps' IHsteps]; intros n v l Hlen Hqs.
+  - simpl in Hqs.
     discriminate.
 
-  - rewrite part_larger_count.
-    destruct l as [ | h l'].
+  - destruct l as [ | h l'].
     -- simpl in *; discriminate.
     -- simpl in Hqs.
        destruct (n <=? length (partitionLarger h l')) eqn:Heq1.
        --- Search (_ <=? _ = true).
            rewrite Nat.leb_le in Heq1.
+           assert (h < v).
+           { apply In_part_larger with l'.
+             apply In_qs with steps' n; auto. }
+           simpl; replace (gtb h v) with false.
+           2: { unfold gtb. symmetry; apply Nat.ltb_nlt. lia. }
+           assert (Hcount := Hqs).
+           apply IHsteps in Hcount; try lia.
+
+           apply Nat.lt_trans with (count gtb v (partitionLarger h l')); auto.
+           assert (n > 0); try lia.
+           assert (length (partitionLarger h l') > 0); try lia.
+           apply count_part_larger_lt; auto.
+           assert (In v (partitionLarger h l')).
+           { apply In_qs with steps' n; auto. }
+           apply In_part_larger_In_list with h; auto.
+
+           simpl in Hlen.
+           assert (length l' <= steps'); try lia.
+           apply Nat.le_trans with (length l'); auto.
+           apply part_larger_length; auto.
+
+       --- rewrite Nat.leb_nle in Heq1.
+           destruct (length (partitionLarger h l') + length (partitionEqual h l') + 1 <? n) eqn:Heq2.
+
+           2: {
+             injection Hqs; intros.
+             replace h with v in *; simpl.
+             replace (gtb v v) with false.
+             rewrite Nat.ltb_nlt in Heq2.
+             rewrite part_larger_count.
+             lia.
+             unfold gtb; symmetry; apply Nat.ltb_irrefl.
+           }
+
+           apply Nat.ltb_lt in Heq2.
+           assert (length (partitionLarger h l') < n); try lia.
+           assert (Hcount := Hqs).
+           apply IHsteps in Hqs.
            simpl.
-           replace (gtb h v) with false.
-           ---- rewrite <- part_larger_count.
-                apply IHsteps.
-                simpl in Hlen; lia.
-                unfold quick_select.
 
+           apply In_qs in Hcount.
+           apply In_part_smaller in Hcount.
+           unfold gtb at 1.
+           apply Nat.ltb_lt in Hcount; rewrite Hcount.
+           rewrite part_larger_count.
+           rewrite Nat.ltb_lt in Hcount.
+           rewrite part_larger_count in Hqs.
 
+           replace (length (partitionLarger v l')) with
+               (length (partitionLarger v (partitionSmaller h l'))
+                + length (partitionLarger h l') + length (partitionEqual h l')).
+           lia.
+
+           apply part_smaller_chunk; auto.
+
+           simpl in Hlen.
+           apply Nat.le_trans with (length l'); try lia.
+           apply part_smaller_length.
+Qed.
 
 
 
 Theorem quickselect_theorem : forall (n v: nat) (l : list nat),
   quick_select n l = Some v -> 
-  (count gtb v l) <= (n-1) /\ (count Nat.eqb v l) <= (length l) /\ 
+  (count gtb v l) < n /\ (count Nat.eqb v l) <= (length l) /\ 
   (count Nat.ltb v l) <= ((length l)-n).
 Proof.
   intros n v l H.
+  unfold quick_select in H.
   split.
-  - induction l as [ | h t IHl].
-   + discriminate H.
-   + simpl. destruct (gtb h v) eqn:Heqn.
-    * Search (_ <= _). apply le_Sn_le.
-
-
+  - apply qs_theorem_gtb with (length l); auto.
+  - split.
+    --
+    --
+Qed.
 
 
 
