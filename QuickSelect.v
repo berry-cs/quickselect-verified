@@ -340,8 +340,6 @@ Proof.
 
            ---- Search (_ < _ -> _ <= _ -> _ < _).
                 apply Nat.le_lt_trans with (count gtb v (partitionLarger h l')); auto.
-                (*assert (n > 0); try lia.*)
-                (*assert (length (partitionLarger h l') > 0); try lia.*)
                 rewrite <- count_part_larger_lt; auto.
 
            ---- simpl in Hlen.
