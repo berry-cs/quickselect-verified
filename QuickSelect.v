@@ -206,48 +206,86 @@ Proof. reflexivity. Qed.
 (* ********************************************************************* *)
 
 
+(*
+  Hints: after induction, simpl, and handling the basic cases,
+         destruct (gtb a h). unfold gtb so that it shows as <? 
+         and use Nat.ltb_lt  (to rewrite) *)
 Lemma In_part_larger : forall lst h x, In x (partitionLarger h lst) -> h < x.
 Proof.
 Admitted.
 
+
+(* Hints: after induction, simpl, and handling the basic cases,
+         destruct (a <? h), and use Nat.ltb_lt (to rewrite) *)
 Lemma In_part_smaller : forall lst h x, In x (partitionSmaller h lst) -> x < h.
 Proof.
 Admitted.
 
+
+(* Hints: remember to unfold gtb to get it showing as <? after simpl'ing
+          destruct (p <? h) and rewrite with Nat.ltb_lt *)
+Lemma In_part_larger_In_list : 
+             forall v p l, p < v -> In v (partitionLarger p l) -> In v l.
+Proof.
+Admitted.
+
+
+Lemma In_part_smaller_In_list : 
+             forall v p l, v < p -> In v (partitionSmaller p l) -> In v l.
+Proof.
+Admitted.
+
+
+(* Hints:
+   - general idea: induction steps, then destruct lst.
+   - use discriminate to eliminate silly cases.
+   - destruct things like (n <=? length (partitionLarger h lst')) that are 
+     blocking simplification
+   - use In_part_larger_In_list, In_part_larger, etc.
+*)
 Lemma In_qs : forall steps n lst v, q_s steps n lst = Some v -> In v lst.             
 Proof.
 Admitted.
 
-Lemma In_part_larger_In_list : 
-             forall v h l, h < v -> In v (partitionLarger h l) -> In v l.
-Proof.
-Admitted.
 
-Lemma count_part_larger_lt :
-  forall lst h v, h < v
-                  -> In v lst
-                  -> length (partitionLarger h lst) > 0
-                  -> count gtb v lst < count gtb v (partitionLarger h lst).
-Proof.
-Admitted.
-
+(* Hints:
+   - induction l. unfold gtb.
+   - lots of rewriting  Nat.ltb_lt, Nat.ltb_nlt, Nat.eqb_neq, Nat.eqb_eq
+     (use symmetry if necessary to flip left/right of the = )
+   - use:  lia  to handle arithmetic reasoning automatically
+*)
 Lemma counts_add_up :
-  forall h l, count gtb h l + count Nat.eqb h l + count Nat.ltb h l = length l.
+  forall p l, count gtb p l + count Nat.eqb p l + count Nat.ltb p l = length l.
 Proof.
 Admitted.
 
 
+(* Hints:
+   - induction on lst. similar hints as the previous one.
+*)
+Lemma count_part_larger_lt :
+  forall lst p v, p < v -> count gtb v lst = count gtb v (partitionLarger p lst).
+Proof.
+Admitted.
+
+
+(* Hints:
+   - induction on l. use simpl; auto  a lot. also lia.
+*)
 Lemma count_part_smaller_lt :
-  forall v h l, v < h -> count Nat.ltb v (partitionSmaller h l) = count Nat.ltb v l.
+  forall v p l, v < p -> count Nat.ltb v (partitionSmaller p l) = count Nat.ltb v l.
 Proof.
 Admitted.
 
 
+(* Hints:
+   - induction on l, several destructs with ...; simpl; auto  after them makes it short.
+   - rewrite with Nat.ltb_nlt, Nat.eqb_eq 
+*)
 Lemma count_part_smaller_eq :
-  forall v h l, v < h -> count Nat.eqb v (partitionSmaller h l) = count Nat.eqb v l.
+  forall v p l, v < p -> count Nat.eqb v (partitionSmaller p l) = count Nat.eqb v l.
 Proof.
 Admitted.
-
 
 
 Lemma part_smaller_chunk :
@@ -277,8 +315,6 @@ Qed.
 
 
 
-
-
 Lemma qs_theorem_gtb : forall (steps n v: nat) (l : list nat),
     length l <= steps ->
     q_s steps n l = Some v -> 
@@ -302,18 +338,16 @@ Proof.
            assert (Hcount := Hqs).
            apply IHsteps in Hcount; try lia.
 
-           apply Nat.lt_trans with (count gtb v (partitionLarger h l')); auto.
-           assert (n > 0); try lia.
-           assert (length (partitionLarger h l') > 0); try lia.
-           apply count_part_larger_lt; auto.
-           assert (In v (partitionLarger h l')).
-           { apply In_qs with steps' n; auto. }
-           apply In_part_larger_In_list with h; auto.
+           ---- Search (_ < _ -> _ <= _ -> _ < _).
+                apply Nat.le_lt_trans with (count gtb v (partitionLarger h l')); auto.
+                (*assert (n > 0); try lia.*)
+                (*assert (length (partitionLarger h l') > 0); try lia.*)
+                rewrite <- count_part_larger_lt; auto.
 
-           simpl in Hlen.
-           assert (length l' <= steps'); try lia.
-           apply Nat.le_trans with (length l'); auto.
-           apply part_larger_length; auto.
+           ---- simpl in Hlen.
+                assert (length l' <= steps'); try lia.
+                apply Nat.le_trans with (length l'); auto.
+                apply part_larger_length; auto.
 
        --- rewrite Nat.leb_nle in Heq1.
            destruct (length (partitionLarger h l') + length (partitionEqual h l') + 1 <? n) eqn:Heq2.
