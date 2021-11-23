@@ -212,8 +212,15 @@ Proof. reflexivity. Qed.
          and use Nat.ltb_lt  (to rewrite) *)
 Lemma In_part_larger : forall lst h x, In x (partitionLarger h lst) -> h < x.
 Proof.
-Admitted.
-
+  intros lst h x H.
+  induction lst as [ | head t IHl].
+  -simpl in H. destruct H.
+  -simpl in H. destruct (gtb head h) eqn:Heqn; auto.
+  -- unfold gtb in Heqn. apply Nat.ltb_lt in Heqn.
+     simpl in H. destruct H.
+     replace x with head; auto.
+     auto.
+Qed.
 
 (* Hints: after induction, simpl, and handling the basic cases,
          destruct (a <? h), and use Nat.ltb_lt (to rewrite) *)
@@ -334,13 +341,12 @@ Proof.
            { apply In_part_larger with l'.
              apply In_qs with steps' n; auto. }
            simpl; replace (gtb h v) with false.
-           2: { unfold gtb. symmetry; apply Nat.ltb_nlt. lia. }
+           2: { unfold gtb. symmetry. apply Nat.ltb_nlt. lia. }
            assert (Hcount := Hqs).
-           apply IHsteps in Hcount; try lia.
+           apply IHsteps in Hcount.
 
            ---- Search (_ < _ -> _ <= _ -> _ < _).
-                apply Nat.le_lt_trans with (count gtb v (partitionLarger h l')); auto.
-                rewrite <- count_part_larger_lt; auto.
+                rewrite count_part_larger_lt with l' h v; auto.
 
            ---- simpl in Hlen.
                 assert (length l' <= steps'); try lia.
@@ -357,7 +363,7 @@ Proof.
              rewrite Nat.ltb_nlt in Heq2.
              rewrite part_larger_count.
              lia.
-             unfold gtb; symmetry; apply Nat.ltb_irrefl.
+             unfold gtb. symmetry. apply Nat.ltb_irrefl.
            }
 
            apply Nat.ltb_lt in Heq2.
