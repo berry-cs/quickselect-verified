@@ -226,21 +226,42 @@ Qed.
          destruct (a <? h), and use Nat.ltb_lt (to rewrite) *)
 Lemma In_part_smaller : forall lst h x, In x (partitionSmaller h lst) -> x < h.
 Proof.
-Admitted.
-
+  intros lst h x H.
+  induction lst as [ | head t IHl].
+  -simpl in H. destruct H.
+  -simpl in H. destruct (ltb head h) eqn:Heqn; auto.
+   + unfold gtb in Heqn. apply Nat.ltb_lt in Heqn.
+     simpl in H. destruct H.
+     replace x with head; auto.
+     auto.
+Qed.
 
 (* Hints: remember to unfold gtb to get it showing as <? after simpl'ing
           destruct (p <? h) and rewrite with Nat.ltb_lt *)
 Lemma In_part_larger_In_list : 
              forall v p l, p < v -> In v (partitionLarger p l) -> In v l.
 Proof.
-Admitted.
+  intros v p l H1 H2.
+  induction l as [ | h t IHl].
+  - simpl in H2. destruct H2.
+  - simpl. simpl in H2. unfold gtb in H2. destruct (p <? h) eqn:Heqn; auto.
+   + simpl in H2. destruct H2.
+    * left; auto.
+    * right; auto.
+Qed. 
 
 
 Lemma In_part_smaller_In_list : 
              forall v p l, v < p -> In v (partitionSmaller p l) -> In v l.
 Proof.
-Admitted.
+  intros v p l H1 H2.
+  induction l as [ | h t IHl].
+  - simpl in H2. destruct H2.
+  - simpl. simpl in H2. destruct (h <? p) eqn:Heqn; auto.
+   + simpl in H2. destruct H2.
+    * left; auto.
+    * right; auto.
+Qed. 
 
 
 (* Hints:
