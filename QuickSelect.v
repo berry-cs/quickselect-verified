@@ -303,7 +303,12 @@ Admitted.
 Lemma count_part_smaller_lt :
   forall v p l, v < p -> count Nat.ltb v (partitionSmaller p l) = count Nat.ltb v l.
 Proof.
-Admitted.
+  intros v p l H.
+  induction l as [ | h t IHl ]; auto.
+  - simpl. destruct (h <? p) eqn:Heqn1; auto.
+   + simpl. destruct (h <? v) eqn:Heqn2; auto.
+   + simpl. destruct (h <? v) eqn:Heqn2.
+    * simpl. Admitted.
 
 
 (* Hints:
