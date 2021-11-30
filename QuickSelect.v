@@ -19,6 +19,8 @@ Ltac blia :=
   try rewrite Nat.ltb_nlt in *;
   try rewrite Nat.eqb_eq in *;
   try rewrite Nat.eqb_neq in *;
+  try rewrite Nat.leb_le in *;
+  try rewrite Nat.leb_nle in *;
   try lia; auto.
 
 Fixpoint count (f: nat -> nat -> bool) (v : nat) (l : list nat) : nat :=
@@ -283,9 +285,22 @@ Qed.
      blocking simplification
    - use In_part_larger_In_list, In_part_larger, etc.
 *)
-Lemma In_qs : forall steps n lst v, q_s steps n lst = Some v -> In v lst.             
+Lemma In_qs : forall steps n lst v, q_s steps n lst = Some v -> In v lst.
 Proof.
-Admitted.
+  intros steps .
+  induction steps as [ | steps' IHs ]; intros n lst v H.
+  - simpl in H. discriminate H.
+  - destruct lst as [ | h t ].
+   + simpl in H. discriminate H.
+   + simpl.  simpl in H. destruct (n <=? length (partitionLarger h t)) eqn:Heqn; blia.
+    * apply IHs in H. right. apply In_part_larger_In_list with h; blia.
+      -- apply In_part_larger with t; auto.
+    * destruct (length (partitionLarger h t) + length (partitionEqual h t) + 1 <? n) eqn:Heqn2; blia.
+      -- apply IHs in H. right. apply In_part_smaller_In_list with h; blia.
+        ++ apply In_part_smaller with t; auto.
+      -- left. injection H. auto.
+Qed.
+
 
 
 (* Hints:
@@ -297,7 +312,15 @@ Admitted.
 Lemma counts_add_up :
   forall p l, count gtb p l + count Nat.eqb p l + count Nat.ltb p l = length l.
 Proof.
-Admitted.
+  intros p l.
+  induction l as [ | h t ]; blia.
+  - simpl. destruct (p <? h) eqn:Heqn1; blia.
+   + replace (h =? p) with false; blia; replace (h <? p) with false; blia.
+   + destruct (h =? p) eqn:Heqn.
+    * replace (h <? p) with false; blia.
+    * replace (h <? p) with true; blia.
+Qed.
+
 
 
 (* Hints:
