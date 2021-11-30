@@ -5,9 +5,21 @@ Import ListNotations.
 Require Import Coq.Program.Wf.
 Require Import Lia.
 
+
 Definition gtb (n m : nat) : bool :=
   ltb m n.
 
+Ltac blia :=
+  try match goal with
+  | |- true = _ => symmetry
+  | |- false = _ => symmetry
+    end;
+  unfold gtb in *;
+  try rewrite Nat.ltb_lt in *;
+  try rewrite Nat.ltb_nlt in *;
+  try rewrite Nat.eqb_eq in *;
+  try rewrite Nat.eqb_neq in *;
+  try lia; auto.
 
 Fixpoint count (f: nat -> nat -> bool) (v : nat) (l : list nat) : nat :=
   match l with
@@ -216,7 +228,7 @@ Proof.
   induction lst as [ | head t IHl].
   -simpl in H. destruct H.
   -simpl in H. destruct (gtb head h) eqn:Heqn; auto.
-  -- unfold gtb in Heqn. apply Nat.ltb_lt in Heqn.
+  -- blia. (* unfold gtb in Heqn. apply Nat.ltb_lt in Heqn. *)
      simpl in H. destruct H.
      replace x with head; auto.
      auto.
@@ -307,8 +319,10 @@ Proof.
   induction l as [ | h t IHl ]; auto.
   - simpl. destruct (h <? p) eqn:Heqn1; auto.
    + simpl. destruct (h <? v) eqn:Heqn2; auto.
-   + simpl. destruct (h <? v) eqn:Heqn2.
-    * simpl. Admitted.
+   + simpl. destruct (h <? v) eqn:Heqn2; blia.
+    (* * simpl. apply Nat.ltb_nlt in Heqn1. apply Nat.ltb_lt in Heqn2. lia.
+       * apply IHl. *)
+Qed.
 
 
 (* Hints:
