@@ -329,7 +329,18 @@ Qed.
 Lemma count_part_larger_lt :
   forall lst p v, p < v -> count gtb v lst = count gtb v (partitionLarger p lst).
 Proof.
-Admitted.
+  intros lst p v H.
+  induction lst as [ | h t IHl ]; auto.
+  - simpl. unfold gtb. destruct (v <? h) eqn:Heqn1.
+  + simpl. destruct (p <? h)eqn:Heqn2. blia.
+     simpl.
+    replace (v <? h) with true; blia.
+   blia.
+
+  + destruct (p <? h) eqn:Heqn2; blia.
+    simpl. replace (v <? h) with false; blia. 
+Qed.
+ 
 
 
 (* Hints:
@@ -340,7 +351,7 @@ Lemma count_part_smaller_lt :
 Proof.
   intros v p l H.
   induction l as [ | h t IHl ]; auto.
-  - simpl. destruct (h <? p) eqn:Heqn1; auto.
+  - simpl. destruct (h <? p) eqn:Heqn1. auto.
    + simpl. destruct (h <? v) eqn:Heqn2; auto.
    + simpl. destruct (h <? v) eqn:Heqn2; blia.
     (* * simpl. apply Nat.ltb_nlt in Heqn1. apply Nat.ltb_lt in Heqn2. lia.
@@ -355,8 +366,11 @@ Qed.
 Lemma count_part_smaller_eq :
   forall v p l, v < p -> count Nat.eqb v (partitionSmaller p l) = count Nat.eqb v l.
 Proof.
-Admitted.
-
+  induction l as [ | h t ]; auto.
+  intros Hlt.
+  simpl.
+  destruct (h <? p) eqn:Heq1; simpl; destruct (h =? v) eqn:Heq2; blia; simpl.
+Qed.
 
 Lemma part_smaller_chunk :
   forall v h,
@@ -403,8 +417,8 @@ Proof.
            assert (h < v).
            { apply In_part_larger with l'.
              apply In_qs with steps' n; auto. }
-           simpl; replace (gtb h v) with false.
-           2: { unfold gtb. symmetry. apply Nat.ltb_nlt. lia. }
+           simpl; replace (gtb h v) with false. 2: { blia. }
+           
            assert (Hcount := Hqs).
            apply IHsteps in Hcount.
 
@@ -470,6 +484,4 @@ Proof.
     --
     --
 Qed.
-
-
 
