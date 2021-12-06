@@ -147,10 +147,20 @@ Qed.
 
 Lemma part_larger_length : forall n l,
     length (partitionLarger n l) <= length l.
+    (*the length of partitionLarger will always be less than 
+      or equal to the length of the list*)
 Proof.
+  (*induction on the list, simp and auto take care of the first case*)
   induction l as [ | h t IHl]; simpl; auto.
+  (*if the head of the list is greater than n,
+    then cons H onto partition Larger and recursive call
+    else partitinLarger is less than or equal to the length of the tail + 1*)
+  (*we destruct gtb, which gives us (gtb h n) = true, simpl auto takes care of the case*)
   destruct (gtb h n) eqn:Hlt; simpl; auto.
+  (*The length of partitinLarger + 1 is less than or equal to the length of the tail + 1 *)
   Search (S _ <= S _).
+  (*le_n_s = n <= m -> s n <= s m*)
+  (*basically getting rid of the S on both sides, letting us use IHl*)
   apply le_n_S.
   auto.
 Qed.
@@ -225,14 +235,22 @@ Proof. reflexivity. Qed.
          destruct (gtb a h). unfold gtb so that it shows as <? 
          and use Nat.ltb_lt  (to rewrite) *)
 Lemma In_part_larger : forall lst h x, In x (partitionLarger h lst) -> h < x.
+      (* if X is within the partitionLarger, then the head of the list is < x *)
 Proof.
   intros lst h x H.
+(*call induction on the list*)
   induction lst as [ | head t IHl].
+  (*first case is proving that x is within an empty list, therefore nothing is larger than h*)
+  (*simpl in H, gives us that H is false, then destruct and it takes care of that case*)
   -simpl in H. destruct H.
+(* destruct gives us Heqn (gtb head h) = true*)
   -simpl in H. destruct (gtb head h) eqn:Heqn; auto.
   -- blia. (* unfold gtb in Heqn. apply Nat.ltb_lt in Heqn. *)
+     (*destruct H to focus on each part of the or *)
      simpl in H. destruct H.
+     (*H is head = X, Heqn is h < head, so replace x with head to get h < x in Heqn*)
      replace x with head; auto.
+     (*auto takes care of the last case*)
      auto.
 Qed.
 
@@ -287,17 +305,33 @@ Qed.
 *)
 Lemma In_qs : forall steps n lst v, q_s steps n lst = Some v -> In v lst.
 Proof.
+  (*the result of q_S (Some V) is in the given list*)
   intros steps .
   induction steps as [ | steps' IHs ]; intros n lst v H.
+    (*we simplify H and see that Some V is nothing, so we descriminate the case*)
   - simpl in H. discriminate H.
+    (*we destruct the list to empty and h :: t*)
   - destruct lst as [ | h t ].
+    (*we start with the empty case, since the list is empty v cant be in the list,
+      so we discriminate*)
    + simpl in H. discriminate H.
+    (*simplified H, and destructed the if conditions into 
+      Heqn: (n <=? length (partitionLarger h t)) = true. Blia finishes it off*) 
    + simpl.  simpl in H. destruct (n <=? length (partitionLarger h t)) eqn:Heqn; blia.
+    (*sub case where V is in partitionLarger*)
+    (*we focus the right side, and apply a helper lemma (In_part_larger_In_list), 
+      then blia finishes it off*)
     * apply IHs in H. right. apply In_part_larger_In_list with h; blia.
+        (*we apply helper Lemma (In_part_larger) on the tail then auto*)
       -- apply In_part_larger with t; auto.
+    (* Case where v is in the smaller list *)
+    (* we destruct the if conditions into Heqn2, then apply blia*)
     * destruct (length (partitionLarger h t) + length (partitionEqual h t) + 1 <? n) eqn:Heqn2; blia.
+        (*focus on the right side, then apply In_part_smaller_In_list, then blia*)
       -- apply IHs in H. right. apply In_part_smaller_In_list with h; blia.
+        (*we apply in_part_smaller then auto*)
         ++ apply In_part_smaller with t; auto.
+      (*focus on the left side, inject H, then auto*)
       -- left. injection H. auto.
 Qed.
 
