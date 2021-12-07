@@ -120,6 +120,7 @@ Proof. reflexivity. Qed.
 
 Lemma part_smaller_count : forall n l, 
   count Nat.ltb n l = length (partitionSmaller n l).
+  (* very similar to part_larger_count *)
 Proof.
   induction l as [ | h t].
   - simpl; auto.
@@ -129,15 +130,24 @@ Qed.
 
 Lemma part_larger_count : forall n l, 
   count gtb n l = length (partitionLarger n l).
+  (* the count of things greater than n in l is equal to the length of the list we get from partitionLarger of l
+     around n *)
 Proof.
   induction l as [ | h t].
+  (* induction on l *)
   - simpl; auto.
+  (* if l is nil, they will both return 0 *)
   - simpl.
-    destruct (gtb h n) eqn:Hlt; simpl; auto.
+    (* need to check if h is greater than h or not *)
+    destruct (gtb h n) eqn:Hlt. 
+    + simpl. auto.
+    + simpl. auto.
+    (* in both cases, we can use our induction hypothesis *)
 Qed.
 
 Lemma part_equal_count : forall n l, 
   count Nat.eqb n l = length (partitionEqual n l).
+  (* very similar to part_larger_count *)
 Proof.
   induction l as [ | h t].
   - simpl; auto.
@@ -366,14 +376,23 @@ Qed.
 *)
 Lemma counts_add_up :
   forall p l, count gtb p l + count Nat.eqb p l + count Nat.ltb p l = length l.
+  (* the sum of the count of things in l greater than p, the count of things in l equal to p, and the count of things
+     in l less than p is equal the length of l *)
 Proof.
   intros p l.
+  (* intros *)
   induction l as [ | h t ]; blia.
+  (* induction on l, blia takes care of base case *)
   - simpl. destruct (p <? h) eqn:Heqn1; blia.
+  (* destruct if p is less than h and use blia to rewrite some inequalities to proposition form *)
    + replace (h =? p) with false; blia; replace (h <? p) with false; blia.
+    (* if we know p < h, then h = p and h < p is false *)
    + destruct (h =? p) eqn:Heqn.
+    (* we know in this case that p is not less than h, se it is either equal to or greater than *)
     * replace (h <? p) with false; blia.
+    (* equal to case *)
     * replace (h <? p) with true; blia.
+    (* greater than case *)
 Qed.
 
 
@@ -403,9 +422,15 @@ Qed.
 *)
 Lemma count_part_smaller_lt :
   forall v p l, v < p -> count Nat.ltb v (partitionSmaller p l) = count Nat.ltb v l.
+  (* if v is less than p, then the count of things less than v in the smaller partition of l around p is 
+     equal to the count of things less than v in l *)
 Proof.
   intros v p l H.
+  (* intros *)
   induction l as [ | h t IHl ]; auto.
+  (* induction on l *)
+
+  (* very straight foward, lots of autos and destructs *)
   - simpl. destruct (h <? p) eqn:Heqn1. auto.
    + simpl. destruct (h <? v) eqn:Heqn2; auto.
    + simpl. destruct (h <? v) eqn:Heqn2; blia.
@@ -420,6 +445,7 @@ Qed.
 *)
 Lemma count_part_smaller_eq :
   forall v p l, v < p -> count Nat.eqb v (partitionSmaller p l) = count Nat.eqb v l.
+  (* very similar to count_part_smaller_lt *)
 Proof.
   induction l as [ | h t ]; auto.
   intros Hlt.
@@ -433,23 +459,36 @@ Lemma part_smaller_chunk :
       length (partitionLarger v (partitionSmaller h l)) +
       length (partitionLarger h l) + length (partitionEqual h l) =
       length (partitionLarger v l).
+  (* if v is less than h, then the length of part things in l between h and v, equal to h, and greater than h is equal 
+     to the things in l greater than v *) 
 Proof.
   intros.
+  (* intros *)
   repeat rewrite <- part_larger_count.
+  (* count gtb n l = length (partitionLarger n l). *)
   rewrite <- part_equal_count.
+  (* count Nat.eqb n l = length (partitionEqual n l). *)
+
+  (* assert some already known knowledge for later *)
   assert (H1:=counts_add_up h l).
+  (* forall p l, count gtb p l + count Nat.eqb p l + count Nat.ltb p l = length l. *)
   assert (H2:=counts_add_up v (partitionSmaller h l)).
   assert (H3:=counts_add_up v l).
+  (* replacing a lot of elements in H1 *)
   rewrite <- part_smaller_count in H2.
+  (* count Nat.ltb n l = length (partitionSmaller n l). *)
   rewrite <- H3 in H1.
   rewrite <- H2 in H1.
 
   replace (count Nat.eqb v l) with (count Nat.eqb v (partitionSmaller h l)) in H1.
   replace (count Nat.ltb v l) with (count Nat.ltb v (partitionSmaller h l)) in H1.
+  (* prove the original goal with a simple lia *)
   lia.
 
   apply count_part_smaller_lt; auto.
+  (* forall v p l, v < p -> count Nat.ltb v (partitionSmaller p l) = count Nat.ltb v l. *)
   apply count_part_smaller_eq; auto.
+  (* forall v p l, v < p -> count Nat.eqb v (partitionSmaller p l) = count Nat.eqb v l. *)
 Qed.
 
 
