@@ -182,23 +182,44 @@ Proof.
 Qed.
 
 
+
+(* q_s finds the nth largest thing in the given list *)
+
+(* We had to give it an additional input "steps"  
+so that the function could run recursively; without steps it was unable to tell
+whether or not the function would always terminate. *)
 Fixpoint q_s (steps:nat) (n : nat) (l : list nat) : option nat :=
+  (* actual recursion happens until steps runs out to 0*)
   match steps with
    | 0 => None
    | S steps' =>
       match l with
+
+      (*if list is empty we return none (used option as return type) *)
       | nil => None
+      
+      (* if list is nonempty run 3 partition funcs on t with h as pivot, creating 3 lists 
+       to use *)   
       | h :: t => let  larger := partitionLarger h t in
                   let  smaller := partitionSmaller h t in
                   let  equal := partitionEqual h t in
+      (* if n < length of larger, we know ans must be in partLarger *)
       if n <=? length larger then
          q_s steps' n larger else
+      (* if n > sum of length large and equal, we know ans is partSmaller *)
          if (length larger + length equal + 1) <? n then
+       (*must subtract from n because we are now starting q_s over in smaller; don't want 
+         orignial nth largest from this list*)
          q_s steps' (n - (length larger + length equal + 1)) smaller else
+       (*finally have that ans is in partEqual and return it  *)
          Some h
       end
   end.
 
+(* We defined this function to use q_s on the given n and l and it automatically tells 
+q_s that (length l) steps are required; this works because the number of steps necessary
+to find ans is always gonna be less than the length of orig list, but probably not equal.
+*)
 Definition quick_select (n : nat) (l : list nat) : option nat :=
   q_s (length l) n l.
 
@@ -518,4 +539,3 @@ Proof.
     --
     --
 Qed.
-
