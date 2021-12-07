@@ -453,21 +453,36 @@ Proof.
 Qed.
 
 
+(*if length of l is less than steps and q_s returns a value, 
+ then number of things greater
+ than the value given in our orig list is less than n*)
+
+(*if it was more than n, than v is not really the nth largest thing in the list*)
 
 Lemma qs_theorem_gtb : forall (steps n v: nat) (l : list nat),
     length l <= steps ->
     q_s steps n l = Some v -> 
     (count gtb v l) < n.
 Proof.
-  induction steps as [ | steps' IHsteps]; intros n v l Hlen Hqs.
-  - simpl in Hqs.
-    discriminate.
 
+(*begin by inducting on steps *)
+  induction steps as [ | steps' IHsteps]; intros n v l Hlen Hqs.
+  
+  - simpl in Hqs.
+    (* if steps is 0 we get q_s returns none and we get a contradiction *)
+    discriminate.
+    (* list is either empty or not MT *)
   - destruct l as [ | h l'].
-    -- simpl in *; discriminate.
+       (*running q_s on MT list gives none, breaking an assumption *)
+    -- simpl in *. discriminate.
+       (*break open q_s for nonMT case*)
     -- simpl in Hqs.
+     (*have to check 3 cases: v is in partL, partE, or partS*)
+
+      (*begin w/ partL*)
        destruct (n <=? length (partitionLarger h l')) eqn:Heq1.
        --- Search (_ <=? _ = true).
+          (* want to rewrite Heq1 from boolean to prop*)
            rewrite Nat.leb_le in Heq1.
            assert (h < v).
            { apply In_part_larger with l'.
@@ -476,28 +491,39 @@ Proof.
            
            assert (Hcount := Hqs).
            apply IHsteps in Hcount.
+           (* we now have to prove length of parLarger h l' <= steps to satisfy using
+            Induct Hypoth on Hcount*)
 
            ---- Search (_ < _ -> _ <= _ -> _ < _).
+                 (* we've shown h < v, so we use this lemma to rewrite write side to equal Hcount.*)
                 rewrite count_part_larger_lt with l' h v; auto.
 
            ---- simpl in Hlen.
                 assert (length l' <= steps'); try lia.
                 apply Nat.le_trans with (length l'); auto.
+                  (*have lemma for this*)
                 apply part_larger_length; auto.
+             (*we've taken care of case where v is in partLarger*)
 
+            (*again rewrite boolean statement to proposition form*)
        --- rewrite Nat.leb_nle in Heq1.
            destruct (length (partitionLarger h l') + length (partitionEqual h l') + 1 <? n) eqn:Heq2.
 
+        (*skip to part where v is in partEqual/ h=v b/c it is easier *)
            2: {
              injection Hqs; intros.
-             replace h with v in *; simpl.
+             replace h with v in *. simpl.
              replace (gtb v v) with false.
              rewrite Nat.ltb_nlt in Heq2.
+
+(* v = h so h is not gt v and we know that count gt v in the lsit is equal
+to length of larger Partition and by assumption n is not less than or equal to that length*)
              rewrite part_larger_count.
              lia.
              unfold gtb. symmetry. apply Nat.ltb_irrefl.
            }
 
+         (*the case where v is in partSmaller works similarly to when it is in partLarger*)
            apply Nat.ltb_lt in Heq2.
            assert (length (partitionLarger h l') < n); try lia.
            assert (Hcount := Hqs).
