@@ -118,15 +118,6 @@ Proof. reflexivity. Qed.
 
 
 
-Lemma part_smaller_count : forall n l, 
-  count Nat.ltb n l = length (partitionSmaller n l).
-  (* very similar to part_larger_count *)
-Proof.
-  induction l as [ | h t].
-  - simpl; auto.
-  - simpl.
-    destruct (h <? n) eqn:Hlt; simpl; auto.
-Qed.
 
 Lemma part_larger_count : forall n l, 
   count gtb n l = length (partitionLarger n l).
@@ -143,6 +134,16 @@ Proof.
     + simpl. auto.
     + simpl. auto.
     (* in both cases, we can use our induction hypothesis *)
+Qed.
+
+Lemma part_smaller_count : forall n l, 
+  count Nat.ltb n l = length (partitionSmaller n l).
+  (* very similar to part_larger_count *)
+Proof.
+  induction l as [ | h t].
+  - simpl; auto.
+  - simpl.
+    destruct (h <? n) eqn:Hlt; simpl; auto.
 Qed.
 
 Lemma part_equal_count : forall n l, 
